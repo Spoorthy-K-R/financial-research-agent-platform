@@ -62,6 +62,9 @@ interface ChatMessage {
   sources?: Array<{ section: string; url: string; date: string }>;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+
 export default function App() {
   // Search state
   const [ticker, setTicker] = useState('MSFT');
@@ -109,7 +112,7 @@ export default function App() {
   // Fetch ticker metadata and chart history on mount / search
   const fetchTickerData = async (symbol: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/ticker/${symbol}`);
+      const res = await fetch(`${API_URL}/api/ticker/${symbol}`);
       if (!res.ok) throw new Error("Ticker not found");
       const data = await res.json();
       setTickerInfo(data.info);
@@ -125,7 +128,7 @@ export default function App() {
   // Attempt to load existing report from cache
   const loadExistingReport = async (symbol: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/reports/${symbol}`);
+      const res = await fetch(`${API_URL}/api/reports/${symbol}`);
       if (res.ok) {
         const data = await res.json();
         setReportMarkdown(data.report);
@@ -170,7 +173,7 @@ export default function App() {
       report: 'idle'
     });
 
-    const wsUrl = `ws://localhost:8000/ws/research/${symbol}`;
+    const wsUrl = `${WS_URL}/ws/research/${symbol}`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
@@ -274,7 +277,7 @@ export default function App() {
     setChatLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/chat', {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticker, query: userMsg })

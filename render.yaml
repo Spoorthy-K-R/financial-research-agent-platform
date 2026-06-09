@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: financial-agent-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: RUN_MODE
+        value: local
+      - key: SEC_USER_AGENT
+        value: "FinancialResearchAgent/1.0 (researcher@example.com)"
+      - key: GEMINI_API_KEY
+        sync: false
