@@ -36,7 +36,7 @@ class ValuationAgent:
             "You must return structured JSON that strictly conforms to the requested schema."
         )
 
-    def _run_dcf_calculator(self, ticker: str, financials: Dict[str, Any], current_price: float) -> Dict[str, Any]:
+    async def _run_dcf_calculator(self, ticker: str, financials: Dict[str, Any], current_price: float) -> Dict[str, Any]:
         """Runs a 5-year DCF calculation in Python using yfinance balance sheet and cash flow details."""
         info = {}
         try:
@@ -172,8 +172,8 @@ class ValuationAgent:
         
         # 1. Fetch info and financials
         print(f"Valuation agent: Fetching company data for {ticker}...")
-        info = data_fetcher.get_company_info(ticker)
-        financials = data_fetcher.get_financial_statements(ticker)
+        info = await asyncio.to_thread(data_fetcher.get_company_info, ticker)
+        financials = await asyncio.to_thread(data_fetcher.get_financial_statements, ticker)
         
         # Determine current price
         stock = yf.Ticker(ticker)
@@ -184,7 +184,7 @@ class ValuationAgent:
             if c_price:
                 current_price = float(c_price)
             else:
-                history = data_fetcher.get_stock_history(ticker, period="1mo")
+                history = await asyncio.to_thread(data_fetcher.get_stock_history, ticker, "1mo")
                 if history:
                     current_price = float(history[-1]["close"])
         except Exception:
@@ -194,10 +194,10 @@ class ValuationAgent:
             current_price = 150.0
 
         # 2. Run DCF Calculator in Python
-        dcf_results = self._run_dcf_calculator(ticker, financials, current_price)
+        dcf_results = await self._run_dcf_calculator(ticker, financials, current_price)
         
         # 3. Pull Peer multiples
-        peers = data_fetcher.get_competitors(ticker, info.get("sector", "Technology"))
+        peers = await asyncio.to_thread(data_fetcher.get_competitors, ticker, info.get("sector", "Technology"))
         
         peer_multiples = []
         # Add target company first
