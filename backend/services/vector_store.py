@@ -100,7 +100,7 @@ class VectorStore:
         if self.client:
             try:
                 response = self.client.models.embed_content(
-                    model="text-embedding-004",
+                    model="embedding-001",
                     contents=text
                 )
                 if response and response.embedding and response.embedding.values:

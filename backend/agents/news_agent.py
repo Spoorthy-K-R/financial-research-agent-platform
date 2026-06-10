@@ -3,6 +3,7 @@ import yfinance as yf
 from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
+from backend.services.data_fetcher import yf_session
 
 class NewsSummaryItem(BaseModel):
     title: str = Field(description="Title of the news article")
@@ -35,7 +36,7 @@ class NewsAgent:
         print(f"News agent: Fetching news for {ticker}...")
         raw_news = []
         try:
-            stock = yf.Ticker(ticker)
+            stock = yf.Ticker(ticker, session=yf_session)
             raw_news = stock.news
         except Exception as e:
             print(f"News agent error fetching yfinance news: {e}")

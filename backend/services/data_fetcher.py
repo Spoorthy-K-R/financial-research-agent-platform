@@ -9,6 +9,14 @@ from typing import Dict, List, Any, Optional
 from bs4 import BeautifulSoup
 from backend.config import settings
 
+# Create a custom session with a browser user-agent to bypass Yahoo Finance 401 Crumb errors
+yf_session = requests.Session()
+yf_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5"
+})
+
 class DataFetcher:
     def __init__(self):
         self.headers = {
@@ -78,7 +86,7 @@ class DataFetcher:
         """Fetches metadata about the company from Yahoo Finance."""
         ticker = ticker.upper().strip()
         try:
-            stock = yf.Ticker(ticker)
+            stock = yf.Ticker(ticker, session=yf_session)
             info = stock.info
             
             return {
@@ -119,7 +127,7 @@ class DataFetcher:
         """Fetches stock price history for charting."""
         ticker = ticker.upper().strip()
         try:
-            stock = yf.Ticker(ticker)
+            stock = yf.Ticker(ticker, session=yf_session)
             hist = stock.history(period=period)
             
             data = []
@@ -362,7 +370,7 @@ class DataFetcher:
         # 2. Fallback to Yahoo Finance
         print(f"Data Fetcher: SEC EDGAR XBRL unavailable for {ticker}. Falling back to Yahoo Finance...")
         try:
-            stock = yf.Ticker(ticker)
+            stock = yf.Ticker(ticker, session=yf_session)
             
             # Helper to convert DataFrame to clean dictionary
             def df_to_dict(df):

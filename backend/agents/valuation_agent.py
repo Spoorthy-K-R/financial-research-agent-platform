@@ -3,7 +3,7 @@ import yfinance as yf
 from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
-from backend.services.data_fetcher import data_fetcher
+from backend.services.data_fetcher import data_fetcher, yf_session
 
 class DcfValuation(BaseModel):
     estimated_fair_value: float = Field(description="Calculated DCF fair value share price")
@@ -37,8 +37,9 @@ class ValuationAgent:
 
     def _run_dcf_calculator(self, ticker: str, financials: Dict[str, Any], current_price: float) -> Dict[str, Any]:
         """Runs a 5-year DCF calculation in Python using yfinance balance sheet and cash flow details."""
+        info = {}
         try:
-            stock = yf.Ticker(ticker)
+            stock = yf.Ticker(ticker, session=yf_session)
             info = stock.info
             
             # Fetch inputs
@@ -211,7 +212,7 @@ class ValuationAgent:
 
         for peer in peers[:3]: # limit to top 3 peers to save network calls
             try:
-                peer_stock = yf.Ticker(peer)
+                peer_stock = yf.Ticker(peer, session=yf_session)
                 peer_info = peer_stock.info
                 peer_multiples.append({
                     "ticker": peer,
