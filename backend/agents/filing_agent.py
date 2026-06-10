@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
 from backend.services.vector_store import vector_store
 from backend.services.data_fetcher import data_fetcher
+import asyncio
 
 class BusinessSegment(BaseModel):
     name: str = Field(description="Name of the business segment")
@@ -47,7 +48,7 @@ class FilingAgent:
         if not chunks:
             # Not ingested yet, download and ingest
             print(f"Filing agent: Ingesting filings for {ticker}...")
-            raw_chunks = data_fetcher.get_sec_rag_chunks(ticker, "10-K")
+            raw_chunks = await asyncio.to_thread(data_fetcher.get_sec_rag_chunks, ticker, "10-K")
             await vector_store.save_chunks(raw_chunks)
             
         # 2. Query vector store for relevant chunks
@@ -76,7 +77,8 @@ class FilingAgent:
         )
         
         print(f"Filing agent: Querying LLM for {ticker} filing analysis...")
-        result_json = llm_client.call_gemini(
+        result_json = await asyncio.to_thread(
+            llm_client.call_gemini,
             system_prompt=self.system_prompt,
             user_prompt=user_prompt,
             response_schema=FilingAnalysisSchema,

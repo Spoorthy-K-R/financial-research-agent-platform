@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
 from backend.services.data_fetcher import data_fetcher, yf_session
+import asyncio
 
 class DcfValuation(BaseModel):
     estimated_fair_value: float = Field(description="Calculated DCF fair value share price")
@@ -40,7 +41,7 @@ class ValuationAgent:
         info = {}
         try:
             stock = yf.Ticker(ticker, session=yf_session)
-            info = stock.info
+            info = await asyncio.to_thread(lambda: stock.info)
             
             # Fetch inputs
             shares = info.get("sharesOutstanding", 1_000_000_000)
@@ -213,13 +214,15 @@ class ValuationAgent:
         for peer in peers[:3]: # limit to top 3 peers to save network calls
             try:
                 peer_stock = yf.Ticker(peer, session=yf_session)
-                peer_info = peer_stock.info
-                peer_multiples.append({
-                    "ticker": peer,
-                    "pe_ratio": float(peer_info.get("trailingPE", 0.0) or 0.0),
-                    "ps_ratio": float(peer_info.get("priceToSalesTrailing12Months", 0.0) or 0.0),
-                    "ev_ebitda": float(peer_info.get("enterpriseToEbitda", 0.0) or 0.0)
-                })
+                peer_info = await asyncio.to_thread(lambda: peer_stock.info)
+                
+                if peer_info:
+                    peer_multiples.append({
+                        "ticker": peer,
+                        "pe_ratio": float(peer_info.get("trailingPE", 0.0) or 0.0),
+                        "ps_ratio": float(peer_info.get("priceToSalesTrailing12Months", 0.0) or 0.0),
+                        "ev_ebitda": float(peer_info.get("enterpriseToEbitda", 0.0) or 0.0)
+                    })
             except Exception:
                 # Default generic peers if fetch fails
                 peer_multiples.append({"ticker": peer, "pe_ratio": 25.0, "ps_ratio": 6.0, "ev_ebitda": 15.0})
@@ -234,7 +237,8 @@ class ValuationAgent:
         )
 
         print(f"Valuation agent: Querying LLM for {ticker} valuation analysis...")
-        result_json = llm_client.call_gemini(
+        result_json = await asyncio.to_thread(
+            llm_client.call_gemini,
             system_prompt=self.system_prompt,
             user_prompt=user_prompt,
             response_schema=ValuationAnalysisSchema,

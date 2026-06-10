@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
 from backend.services.data_fetcher import yf_session
+import asyncio
 
 class NewsSummaryItem(BaseModel):
     title: str = Field(description="Title of the news article")
@@ -37,7 +38,7 @@ class NewsAgent:
         raw_news = []
         try:
             stock = yf.Ticker(ticker, session=yf_session)
-            raw_news = stock.news
+            raw_news = await asyncio.to_thread(lambda: stock.news)
         except Exception as e:
             print(f"News agent error fetching yfinance news: {e}")
             
@@ -71,7 +72,8 @@ class NewsAgent:
         )
 
         print(f"News agent: Querying LLM for {ticker} news analysis...")
-        result_json = llm_client.call_gemini(
+        result_json = await asyncio.to_thread(
+            llm_client.call_gemini,
             system_prompt=self.system_prompt,
             user_prompt=user_prompt,
             response_schema=NewsAnalysisSchema,

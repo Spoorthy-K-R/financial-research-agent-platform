@@ -1,6 +1,7 @@
 import json
 from typing import Dict, Any
 from backend.agents.llm_client import llm_client
+import asyncio
 
 class ReportAgent:
     def __init__(self):
@@ -40,10 +41,12 @@ class ReportAgent:
             f"Synthesize this information into a beautifully structured Markdown report."
         )
 
-        print(f"Report agent: Synthesizing final analyst memo for {ticker}...")
-        report_markdown = llm_client.call_gemini(
+        print(f"Report agent: Generating final markdown report for {ticker}...")
+        report_markdown = await asyncio.to_thread(
+            llm_client.call_gemini,
             system_prompt=self.system_prompt,
             user_prompt=user_prompt,
+            response_schema=None,
             ticker=ticker
         )
         

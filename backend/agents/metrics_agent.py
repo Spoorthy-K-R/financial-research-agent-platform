@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 from backend.agents.llm_client import llm_client
 from backend.services.data_fetcher import data_fetcher
+import asyncio
 
 class MetricsSummary(BaseModel):
     revenue_growth_yoy: str = Field(description="YoY revenue growth rate (e.g., +12.4%)")
@@ -132,7 +133,7 @@ class MetricsAgent:
         
         # 1. Fetch financials
         print(f"Metrics agent: Fetching financials for {ticker}...")
-        financials = data_fetcher.get_financial_statements(ticker)
+        financials = await asyncio.to_thread(data_fetcher.get_financial_statements, ticker)
         
         # 2. Compute mathematical ratios in Python
         computed_ratios = self._calculate_financial_ratios(financials)
@@ -155,7 +156,8 @@ class MetricsAgent:
         )
         
         print(f"Metrics agent: Querying LLM for {ticker} financial analysis...")
-        result_json = llm_client.call_gemini(
+        result_json = await asyncio.to_thread(
+            llm_client.call_gemini,
             system_prompt=self.system_prompt,
             user_prompt=user_prompt,
             response_schema=MetricsAnalysisSchema,
